@@ -296,14 +296,20 @@ EXECUTE_TOOL.search_user_history = async ({ keywords }, id) => {
   const list = typeof keywords === 'object' ? keywords.map(k => k.toLowerCase().trim()) : [keywords.toString().toLowerCase().trim()]
   const history = (JSON.parse(localStorage.getItem('history')) || []).filter(h => h.id !== loadedChatId)
   const matching_keywords = new Set()
-  const matching = history.filter(h => h.log.find(m => m.role === 'user' && list.find(l => {
-    const r = m.content.toLowerCase().includes(l)
-    if (r) {
-        matching_keywords.add(l)
-    }
-    return r
+  const matching = history.filter(h => list.find(l => {
+        const r = h.name.toLowerCase().includes(l)
+        if (r) {
+            matching_keywords.add(l)
+        }
+        return r
+    }) || h.log.find(m => m.role === 'user' && list.find(l => {
+        const r = m.content.toLowerCase().includes(l)
+        if (r) {
+            matching_keywords.add(l)
+        }
+        return r
   })))
-  const logs = (list?.length ? matching : history)?.slice(0, 3)
+  const logs = (list?.length ? matching : history)?.slice(0, 5)
   const results = {
       id,
       keywords: list,
