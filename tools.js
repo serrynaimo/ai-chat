@@ -309,13 +309,16 @@ EXECUTE_TOOL.search_user_history = async ({ keywords }, id) => {
         }
         return r
   })))
-  const logs = (list?.length ? matching : history)?.slice(0, 5)
+  const logs = (list?.length ? matching : history)?.slice(0, 10)
   const results = {
       id,
       keywords: list,
       matching_keywords: list?.length ? Array.from(matching_keywords) : undefined,
       description: (list?.length ? `${matching.length} previous conversations matching the given keywords` : `Latest ${logs.length} conversations`) + ' of ' + history.length + ' total past conversations with this user.',
-      results: logs
+      results: logs.map(l => {
+        l.log = l.log.reduce((a, v) => (v.role === 'user' ? [...a, v] : a), [])
+        return l
+      })
   }
   RENDER_TOOL.search_user_history(results, id)
   return results
