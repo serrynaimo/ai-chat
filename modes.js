@@ -100,6 +100,17 @@ MODES = Object.assign({
         content: `Research this topic in detail and summarise your findings: "${topic}" in the context of "${context}"`
     }],
   },
+  clarify: {
+    name: 'Clarify and disambiguate the user prompt',
+    tools: ['search_web_info', 'search_user_history', 'solve_math', 'stock_quotes', 'get_weather'],
+    initialMessages: (prompt) => [{
+        role: 'system',
+        content: 'You\'re an AI agent with the sole purpose to improve a user prompt. Use the `search_user_history` or other tools to establish very relevant contextual information, clarify on the correct use and meaning/disambiguation of terms then rephrase and return the improved prompt with clarity and context without implying an answer or response to facilitate understanding.'
+    }, {
+        role: 'user',
+        content: `Improve this user prompt: "${prompt}"`
+    }]
+  },
   verify: {
     name: 'Verify information and suggest improvements',
     tools: ['search_web_info', 'get_weather', 'search_user_history', 'solve_math', 'solve_complex_math', 'stock_quotes'],

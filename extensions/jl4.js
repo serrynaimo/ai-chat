@@ -13,18 +13,18 @@ MODES = Object.assign({
     name: 'Legal assessment',
     visible: true,
     placeholder: 'What would you like to assess?',
-    tools: ['legal_assessment', 'get_weather', 'search_web_info'],
+    tools: ['evaluate_policy', 'get_weather', 'search_web_info'],
     hello: jl4_hello,
     initialMessages: () => [{
       role: 'system',
-      content: `You're a lawyer AI and always use the provided \`legal_assessment\` tool call to, 1. Help you find out if you can help the user and, 2. assess a valid inquiry against your contracts on hand. The tool call evaluates your inputs against actual contracts, so the result from the tool is determenistically evaluated and always correct even if common sense might disagree. Don't do math yourself, provide any explanations or findings of your own as the underlying contract or law might disagree but share the results from the tool call and list the reasoning steps that was evaluated, format it into an short yet information-dense response and highlight the key result relating to the user prompt in bold. You may execute the tool multiple times or use other tools to gather contextually relevant information to fill required inputs. Remind the user in the end that this is not yet actually legal advice. Now is ${new Date().toString()}.`
+      content: `You're a policy AI and always use the provided \`evaluate_policy\` tool call to, 1. Help you find out if you can help the user and, 2. assess a valid inquiry against your contracts on hand. The tool call evaluates your inputs against actual contracts, so the result from the tool is determenistically evaluated and always correct even if common sense might disagree. Don't do math yourself, provide any explanations or findings of your own as the underlying contract or law might disagree but share the results from the tool call and list the reasoning steps that was evaluated, format it into an short yet information-dense response and highlight the key result relating to the user prompt in bold. You may execute the tool multiple times or use other tools to gather contextually relevant information to fill required inputs. Remind the user in the end that this is not yet actually legal advice. Now is ${new Date().toString()}.`
     }]
   },
   jl4_find_function: {
     name: 'Finds a relevant function/contract',
     initialMessages: (inquiry, functions = []) => [{
       role: 'system',
-      content: `You're a paralegal AI. You assess a user legal inquiry against a list of function descriptions of contracts. Return up to 3 names of functions if they are relevant to asses the inquiry. Always respond in the form of a valid JSON array containing the exact function names.`
+      content: `You're a paralegal AI. You assess a user policy inquiry against a list of function descriptions of contracts. Return up to 3 names of functions if they are relevant to asses the inquiry. Always respond in the form of a valid JSON array containing the exact function names.`
     }, {
       role: 'user',
       content: `Assess if any of the following functions could be useful for this inquiry: "${inquiry}"\n\nFunctions: ${JSON.stringify(functions)}`
@@ -34,10 +34,10 @@ MODES = Object.assign({
     name: 'Paralegal. Evaluates the function/contract',
     initialMessages: (inquiry, toolname) => [{
       role: 'system',
-      content: `You're a paralegal AI. You always call the provided \`${toolname}\` tool call with the exact right parameters to analyse contract situation of the legal inquiry. If you receive errors, try again if you have sufficient detail. Proceed to describe the results in form of bullet points, then explain in a numbered list the reasoning decisions that were evaluated to get to the result. If you lack the required input detail to resolve errors, describe in detail what information you lack. `
+      content: `You're a paralegal AI. You always call the provided \`${toolname}\` tool call with the exact right parameters to analyse contract situation of the policy inquiry. If you receive errors, try again if you have sufficient detail. Proceed to describe the results in form of bullet points, then explain in a numbered list the reasoning decisions that were evaluated to get to the result. If you lack the required input detail to resolve errors, describe in detail what information you lack. `
     }, {
       role: 'user',
-      content: `Call the provided tool correctly to evaluate the legal contract against this user inquiry: "${inquiry}"`
+      content: `Call the provided tool correctly to evaluate the policy contract against this user inquiry: "${inquiry}"`
     }]
   },
   jl4_reasoning: {
@@ -57,8 +57,8 @@ MODES = Object.assign({
 TOOLS.unshift({
   type: "function", 
   function: {
-      name: "legal_assessment",
-      description: "Find out if and how you can help the user with their legal inquiry. If valid, assesses the inquiry against the law. Call only once.",
+      name: "evaluate_policy",
+      description: "Find out if and how you can help the user with their policy inquiry. If valid, assesses the inquiry against the underying policy definition. Call only once.",
       parameters: {
           type: "object",
           properties: {
@@ -74,7 +74,7 @@ TOOLS.unshift({
 
 
 // TOOL FUNCTION EXECUTION
-EXECUTE_TOOL.legal_assessment = async ({ inquiry }, id) => {
+EXECUTE_TOOL.evaluate_policy = async ({ inquiry }, id) => {
   if (!inquiry.trim()) {
       throw new Error('No inquiry passed')
   }
@@ -83,7 +83,7 @@ EXECUTE_TOOL.legal_assessment = async ({ inquiry }, id) => {
   let answers = []
 
   try {
-      if(!jl4_function_cache?.length) {
+      if(!window.jl4_function_cache?.length) {
           await jl4_load_func_list()
       }
       const functionsJson = await chatStreams[id].call({
@@ -92,8 +92,8 @@ EXECUTE_TOOL.legal_assessment = async ({ inquiry }, id) => {
           messages: MODES.jl4_find_function.initialMessages(inquiry, jl4_function_cache)
       })
       tools = (JSON.parse(functionsJson.content?.match(/(\[(\s*"[^"]*"\s*,?)*\s*\])/)?.[0]) || [])
-        .map(t => ({ i: window.toolcount++, name: t }))
-      RENDER_TOOL.legal_assessment({ functions_used: tools }, id)
+        .reduce((a, t) => t.trim() ? [...a, { i: window.toolcount++, name: t }] : a, [])
+      RENDER_TOOL.evaluate_policy({ functions_used: tools }, id)
       
       for (const tool of tools) {
           const tid = id + '-' + tool.i
@@ -119,7 +119,7 @@ EXECUTE_TOOL.legal_assessment = async ({ inquiry }, id) => {
           await new Promise(resolve => setTimeout(resolve, 250))
       }
       if (!tools.length) {
-          answers.push('Not an area of our legal expertise.')
+          answers.push('No relevant policy found.')
       }
   } catch (e) {
       answers.push('Legal assessment failed. Conflict of interest.')
@@ -130,20 +130,20 @@ EXECUTE_TOOL.legal_assessment = async ({ inquiry }, id) => {
 }
 
 // RENDER TOOL RESULT IN CHAT MESSAGE STREAM using `appendTool({ html, id })`
-RENDER_TOOL.legal_assessment = (results, id) => {
+RENDER_TOOL.evaluate_policy = (results, id) => {
   const parts = id.split('-')
   if (loadedChatId?.toString() === parts[0] && results.functions_used?.length) {
     results.functions_used.forEach(f => window.RENDER_TOOL[f.name] = jl4_render_eval_result)
-    appendTool({ html: `<p>Doing law ...</p><ol>${results.functions_used.map(t => `<li><strong>Reviewing possibly relevant legal context: <code>${t.name}</code></strong><br><div id='${id + '-' + t.i}' class="subcontent"></div></li>`).join('')}</ol>`, id })
+    appendTool({ html: `<p>Assessing policies ...</p><ol>${results.functions_used.map(t => `<li><strong>Relevant policy: <code class='policy'>${jl4_policy_translate(t.name)}</code></strong><br><div id='${id + '-' + t.i}' class="subcontent"></div></li>`).join('')}</ol>`, id })
   }
 }
 
 function jl4_render_eval_result(results, id) {
   if (results?.args) {
-    appendTool({ html: `<p>Evaluating contract</p><ul class='items'>${Object.keys(results.args)?.map(k => `<li>${k}: <code>${results.args[k]}</code></li>`).join('')}</ul>`, id })
+    appendTool({ html: `<p>Applying prompt and context information:</p><ul class='items'>${Object.keys(results.args)?.map(k => `<li>${k}: <code>${results.args[k]}</code></li>`).join('')}</ul>`, id })
   }
   if (results?.values) {
-    appendTool({ html: `<p>Para-legal says</p><ul class='items'>${results.values?.map(v => `<li>${v[0]}: <code>${v[1]}</code></li>`).join('')}</ul>`, id })
+    appendTool({ html: `<p>Decision</p><ul class='items'>${results.values?.map(v => `<li>${v[0]}: <code>${v[1]}</code></li>`).join('')}</ul>`, id })
   }
 }
 
@@ -182,7 +182,7 @@ async function jl4_hello () {
   if (!document.body.classList.contains('new')) return
   clearMemory()
   if(await jl4_load_func_list()) {
-    await appendMessage({ text: `<p>The following contracts are available: ${jl4_function_cache.map(f => `<code style='cursor: pointer;' onclick='jl4_render_func("${f.function.name}")'>${f.function.name}</code>`).join(', ')}</p>`, sender: 'assistant' })
+    await appendMessage({ text: `<h4>Available policies for evaluation</h4><p>${jl4_function_cache.map(f => `<code style='cursor: pointer;' class='policy' onclick='jl4_render_func("${f.function.name}")'>${jl4_policy_translate(f.function.name)}</code>`).join(', ')}</p>`, sender: 'assistant' })
   } else {
     await appendMessage({ text: `Could not access JL4 API`, sender: 'system' })
   }
@@ -206,7 +206,7 @@ async function jl4_render_func (name) {
   }
   const props = tdef.function.parameters.properties || {}
   const reqs = tdef.function.parameters.required || []
-  await appendMessage({ text: `<strong>Description for <code>${tdef.function.name}</code></strong><p>${tdef.function.description}</p><ul>${Object.keys(props).map(k => `<li><code${reqs?.includes(k) ? ` style='text-decoration: underline;'` : ''}>${k}</code><i>${props[k].type}</i>: ${props[k].description}</li>`).join('')}</ul>`, sender: 'assistant', id: loadedChatId})
+  await appendMessage({ text: `<strong>Description for <code class='policy'>${jl4_policy_translate(tdef.function.name)}</code></strong><p>${tdef.function.description}</p><ul>${Object.keys(props).map(k => `<li><code${reqs?.includes(k) ? ` style='text-decoration: underline;'` : ''}>${k}</code><i>${props[k].type}</i>: ${props[k].description}</li>`).join('')}</ul>`, sender: 'assistant', id: loadedChatId})
 }
 
 // ONLOAD UPDATE FUNCTION CACHE
@@ -234,3 +234,15 @@ document.getElementById("extensionSettings").appendChild(d)
 
 // GLOBAL VARIABLES FOR THIS EXTENSION
 window.jl4_function_cache = []
+
+function jl4_policy_translate(func) {
+  return ({
+    "compute_qualifies": "Compute Qualification Criteria",
+    "is British citizen": "The British Citizen Act",
+    "is qing": "Is Qing", 
+    "numbers are big": "Big Number Evaluation",
+    "parking_cost": "Parking Cost Regulation",
+    "total fruit v3": "Total Fruit Policy Experiment",
+    "vermin_and_rodent": "Household Insurance Terms"
+  })[func] || func
+}

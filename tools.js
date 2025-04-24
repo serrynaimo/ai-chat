@@ -297,7 +297,7 @@ EXECUTE_TOOL.search_user_history = async ({ keywords }, id) => {
   const history = (JSON.parse(localStorage.getItem('history')) || []).filter(h => h.id !== loadedChatId)
   const matching_keywords = new Set()
   const matching = history.filter(h => list.find(l => {
-        const r = h.name.toLowerCase().includes(l)
+        const r = h.name?.toLowerCase().includes(l)
         if (r) {
             matching_keywords.add(l)
         }
@@ -325,13 +325,30 @@ EXECUTE_TOOL.search_user_history = async ({ keywords }, id) => {
 }
 
 EXECUTE_TOOL.spawn_research_agents = async (topics, id) => {
-  const context = topics.context?.trim()
+  let context = topics.context?.trim()
+  const preSteps = [{ i: window.toolcount++, topic: 'Contextualising and clarifying user prompt ...' }]
   topics = Object.keys(topics).reduce((a, v) => v !== 'context' && topics[v]?.trim() ? [...a, { i: window.toolcount++, topic: topics[v] }] : a, [])
   if (!topics?.length || !context) {
       throw new Error('No topic to research specified')
   }
-  const addedSteps = [{ i: window.toolcount++, topic: 'Verifying results and synthesizing ...' }]
-  RENDER_TOOL.spawn_research_agents({ topics: [...topics, ...addedSteps] }, id)
+  const postSteps = [{ i: window.toolcount++, topic: 'Verifying results and synthesizing ...' }]
+  RENDER_TOOL.spawn_research_agents({ topics: [...preSteps, ...topics, ...postSteps] }, id)
+  await Promise.all(preSteps.map(async step => {
+    try {
+        await new Promise(resolve => setTimeout(resolve, 250))
+        const sid = id + '-' + step.i
+        const json = await chatStreams[id].call({
+            id: sid,
+            messages: MODES.clarify.initialMessages(context),
+            tools: TOOLS.filter(t => MODES.verify.tools.includes(t.function.name))
+        })
+        step.result = json.content?.replace(/<think>[\s\S]*<\/think>/g, '') || 'Was unable to clarify user prompt'
+        context = step.result
+        appendTool({ html: await markdownToHtml(step.result), id: sid })
+    } catch (e) {
+        console.error('Could not research step for ' + id, step, e)
+    }
+}))
   await Promise.all(topics.map(async topic => {
       try {
           await new Promise(resolve => setTimeout(resolve, 250))
@@ -348,7 +365,7 @@ EXECUTE_TOOL.spawn_research_agents = async (topics, id) => {
           console.error('Could not research topic for ' + id, topic, e)
       }
   }))
-  await Promise.all(addedSteps.map(async step => {
+  await Promise.all(postSteps.map(async step => {
       try {
           await new Promise(resolve => setTimeout(resolve, 250))
           const sid = id + '-' + step.i
