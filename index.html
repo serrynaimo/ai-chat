@@ -6,7 +6,7 @@
         window.CONFIG = {
             PERSIST_API: '.',
             PERSIST_KEY: '',
-            MAX_TOKENS: 33000            // Adjust to what you can run
+            MAX_TOKENS: 4096            // Adjust to what you can run
         }
         window.TOOLS = []                   // OpenAI compatible tool definitions
         window.EXECUTE_TOOL = {}            // Object with the JS function implementations defined in TOOLS
@@ -1967,7 +1967,7 @@
             console.log(`Prompt size total: ${size} / ${CONFIG.MAX_TOKENS} characters`)
 
             if (size > CONFIG.MAX_TOKENS) {
-                await appendMessage({ text: `Prompt size before files is ${Math.round(size / CONFIG.MAX_TOKENS * 100)}% of maximum.`, sender: 'system', id: cid })
+                await appendMessage({ text: `Prompt size before images is ${Math.round(size / CONFIG.MAX_TOKENS * 100)}% of maximum.`, sender: 'system', id: cid })
                 return
             }
 
