@@ -105,10 +105,10 @@ MODES = Object.assign({
     tools: ['search_web_info', 'search_user_history', 'solve_math', 'stock_quotes', 'get_weather'],
     initialMessages: (prompt) => [{
         role: 'system',
-        content: 'You\'re an AI agent with the sole purpose to improve a user prompt. Use the `search_user_history` or other tools to establish very relevant contextual information, clarify on the correct use and meaning/disambiguation of terms then rephrase and return the improved prompt with clarity and context without implying an answer or response to facilitate understanding.'
+        content: 'You\'re an AI agent with the sole purpose to improve a user prompt. Use the `search_user_history` or other tools to establish very relevant contextual information, use the `search_web_info` tool to indentify and highlight any potential for confusion of critical terms and clarify on the correct use and meaning/disambiguation then rephrase and return only the improved user prompt to facilitate understanding with clarity and context, highlight where confusion must be avoided, and do not imply an answer or response.'
     }, {
         role: 'user',
-        content: `Improve this user prompt: "${prompt}"`
+        content: `Return the improved prompt for this user prompt: "${prompt}"`
     }]
   },
   verify: {

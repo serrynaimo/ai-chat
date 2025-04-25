@@ -380,7 +380,7 @@ EXECUTE_TOOL.spawn_research_agents = async (topics, id) => {
           console.error('Could not research step for ' + id, step, e)
       }
   }))
-  return { id, topics: [...topics, ...addedSteps]  }
+  return { id, topics: [...preSteps, ...topics, ...postSteps] }
 }
 
 EXECUTE_TOOL.generate_image = async ({ prompt }, id) => {
