@@ -1170,6 +1170,10 @@
             cursor: pointer;
         }
 
+        .think:empty, think:empty {
+            display: none;
+        }
+
         think code, .think code {
             color: #777;
             font-size: 12px;
@@ -2103,6 +2107,7 @@
                     localStorage.setItem('history', toStore)
                     break
                 } catch (e) {
+                    console.log(e)
                     history.pop()
                 }
             }
