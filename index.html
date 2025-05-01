@@ -3171,6 +3171,8 @@
                         const searchInput = settingsMenuElem.querySelector('.search-input')
                         searchInput.focus()
                         searchInput.select()
+                    } else if (e.key === 't') {
+                        document.body.classList.toggle('toolbar')
                     } else if (e.key === 'ArrowLeft') {
                         (document.querySelector(`#activeChats button[data-id="${loadedChatId}"]`)?.previousElementSibling ||
                             document.querySelector(`#activeChats button:last-child`))?.click()
