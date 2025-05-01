@@ -660,7 +660,7 @@
 
         .tool-message .subcontent {
             color: #777;
-            margin-bottom: 1em;
+            margin-bottom: 1.6em;
             font-size: 13px;
         }
 
@@ -756,7 +756,9 @@
             width: fit-content;
             max-width: 200px;
             overflow: hidden;
+            overflow-y: auto;
             background: var(--background);
+            max-height: 52px;
         }
 
         .generating .tool-message li {
@@ -1523,13 +1525,13 @@
                 right: 0;
                 width: calc(45vw - 16px);
                 bottom: 0;
-                padding: 0 8px 25px;
+                padding: 0 8px 160px;
                 top: 40px;
                 display: block;
                 animation: show .6s ease-in-out 1;
             }
 
-            body:not(.new).toolbar .tool-message:last-of-type .content {
+            body:not(.new).toolbar .tool-message:last-of-type > .content {
                 max-height: none;
                 max-width: 100% !important;
                 width: 100% !important;
