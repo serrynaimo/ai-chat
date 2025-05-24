@@ -17,7 +17,7 @@ MODES = Object.assign({
     hello: jl4_hello,
     initialMessages: () => [{
       role: 'system',
-      content: `You're a policy AI and always use the provided \`evaluate_policy\` tool call to, 1. Help you find out if you can help the user and, 2. assess a valid inquiry against your contracts on hand. The tool call evaluates your inputs against actual contracts, so the result from the tool is determenistically evaluated and always correct even if common sense might disagree. Don't do math yourself, provide any explanations or findings of your own as the underlying contract or law might disagree but share the results from the tool call and list the reasoning steps that was evaluated, format it into an short yet information-dense response and highlight the key result relating to the user prompt in bold. You may execute the tool multiple times or use other tools to gather contextually relevant information to fill required inputs. Remind the user in the end that this is not yet actually legal advice. Now is ${new Date().toString()}.`
+      content: `You're a policy AI and always use the provided \`evaluate_policy\` tool call to, 1. Help you find out if you can help the user and, 2. assess a valid inquiry against your contracts on hand. The tool call evaluates your inputs against actual contracts, so the result from the tool is determenistically evaluated and always correct even if common sense or your pre-existing knowledge disagrees. Don't do math yourself, provide any explanations, caveats or findings of your own as the underlying contract or law might disagree but share the results from the tool call and list the reasoning steps that was evaluated, format it into an short yet information-dense response and highlight the key result relating to the user prompt in bold. You may execute the tool multiple times or use other tools to gather contextually relevant information to fill required inputs. Remind the user in the end that this is not yet actually legal advice. Now is ${new Date().toString()}.`
     }]
   },
   jl4_find_function: {
@@ -99,7 +99,7 @@ EXECUTE_TOOL.evaluate_policy = async ({ inquiry }, id) => {
           const tid = id + '-' + tool.i
           let tdef = jl4_function_cache?.find(f => f.function.name === tool.name)
           if (!tdef?.function.parameters) {
-              const jl4Response = await fetch(`${CONFIG.JL4_API}/functions/${tool.name}`, {
+              const jl4Response = await fetch(`${CONFIG.JL4_API}/functions/${tool.name.replace(/___/g, ' ')}`, {
                 headers: {
                   'Authorization': `Bearer ${CONFIG.JL4_KEY}`
                 }
@@ -107,7 +107,9 @@ EXECUTE_TOOL.evaluate_policy = async ({ inquiry }, id) => {
               if (!jl4Response.ok) {
                   throw new Error('Failed to provide jl4 results') 
               }
-              tdef = Object.assign(tdef, await jl4Response.json())
+              const result = await jl4Response.json()
+              result.function.name = result.function.name.replace(/ /g, '___')
+              tdef = Object.assign(tdef, result)
           }
           const toolJson = await chatStreams[id].call({
               id: tid,
@@ -157,7 +159,7 @@ async function jl4_eval_func (func, args, id) {
 
   jl4_render_eval_result({ args }, id)
 
-  const response = await fetch(`${CONFIG.JL4_API}/functions/${func}/evaluation`, {
+  const response = await fetch(`${CONFIG.JL4_API}/functions/${func.replace(/___/g, ' ')}/evaluation`, {
       method: 'POST',
       headers: {
           'Content-type': 'application/json',
@@ -194,7 +196,7 @@ async function jl4_render_func (name) {
   document.body.classList.remove('new')
   let tdef = jl4_function_cache?.find(f => f.function.name === name)
   if (!tdef?.function.parameters) {
-      const jl4Response = await fetch(`${CONFIG.JL4_API}/functions/${name}`, {
+      const jl4Response = await fetch(`${CONFIG.JL4_API}/functions/${name.replace(/___/g, ' ')}`, {
         headers: {
           'Authorization': `Bearer ${CONFIG.JL4_KEY}`
         }
@@ -220,7 +222,10 @@ async function jl4_load_func_list () {
     console.error('Failed to load jl4 functions')
     return false
   }       
-  jl4_function_cache = await response.json()
+  jl4_function_cache = (await response.json()).map(f => {
+    f.function.name = f.function.name.replace(/ /g, '___')
+    return f
+  })
   jl4_function_cache.forEach(f => {
     EXECUTE_TOOL[f.function.name] = jl4_eval_func.bind(window, f.function.name)
   })
@@ -236,6 +241,7 @@ document.getElementById("extensionSettings").appendChild(d)
 window.jl4_function_cache = []
 
 function jl4_policy_translate(func) {
+  func = func.replace(/___/g, ' ')
   return ({
     "compute_qualifies": "Compute Qualification Criteria",
     "is British citizen": "The British Citizen Act",

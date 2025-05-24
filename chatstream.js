@@ -247,42 +247,45 @@ const ChatStream = (function() {
           try {
             if (line.match(/^Data: \{.*\}/i)) {
               const data = JSON.parse(line.substring(6))
-              const delta = data.choices[0].delta
 
-              if (!this.#tokenAmount && !this.#startGeneration) {
-                this.#startGeneration = new Date()
-              }
-              this.#tokenAmount++
+              if (data.choices?.[0]?.delta) {
+                const delta = data.choices[0].delta
+                
+                if (!this.#tokenAmount && !this.#startGeneration) {
+                  this.#startGeneration = new Date()
+                }
+                this.#tokenAmount++
 
-              if (delta.reasoning_content) {
-                if (!thinking) {
-                  delta.reasoning_content = '<think>\n' + delta.reasoning_content
-                  thinking = true
-                }
-                this.#_response += delta.reasoning_content
-                this.#throttleAppendToken(id, delta.reasoning_content)
-              }
-              else if (delta.content) {
-                if (thinking) {
-                  delta.content = '</think>\n' + delta.content
-                  thinking = false
-                }
-                this.#_response += delta.content
-                this.#throttleAppendToken(id, delta.content)
-              } else if (!thinking && delta.tool_calls?.length) {
-                delta.tool_calls.forEach(tc => {
-                  if (this.#toolCalls.length <= tc.index) {
-                    this.#toolCalls.push({
-                      id: '',
-                      type: 'function',
-                      function: { name: '', arguments: '' }
-                    })
+                if (delta.reasoning_content) {
+                  if (!thinking) {
+                    delta.reasoning_content = '<think>\n' + delta.reasoning_content
+                    thinking = true
                   }
-                  const call = this.#toolCalls[tc.index]
-                  call.id += tc.id || ''
-                  call.function.name += tc.function.name || ''
-                  call.function.arguments += tc.function.arguments || ''
-                })
+                  this.#_response += delta.reasoning_content
+                  this.#throttleAppendToken(id, delta.reasoning_content)
+                }
+                else if (delta.content) {
+                  if (thinking) {
+                    delta.content = '</think>\n' + delta.content
+                    thinking = false
+                  }
+                  this.#_response += delta.content
+                  this.#throttleAppendToken(id, delta.content)
+                } else if (!thinking && delta.tool_calls?.length) {
+                  delta.tool_calls.forEach(tc => {
+                    if (this.#toolCalls.length <= tc.index) {
+                      this.#toolCalls.push({
+                        id: '',
+                        type: 'function',
+                        function: { name: '', arguments: '' }
+                      })
+                    }
+                    const call = this.#toolCalls[tc.index]
+                    call.id += tc.id || ''
+                    call.function.name += tc.function.name || ''
+                    call.function.arguments += tc.function.arguments || ''
+                  })
+                }
               }
             }
           } catch (e) {
