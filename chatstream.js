@@ -273,6 +273,10 @@ const ChatStream = (function() {
                   this.#throttleAppendToken(id, delta.content)
                 } else if (delta.tool_calls?.length) {
                   delta.tool_calls.forEach(tc => {
+                    if (thinking) {
+                      thinking = false
+                      this.#_response += '</think>\n'
+                    }
                     if (this.#toolCalls.length <= tc.index) {
                       this.#toolCalls.push({
                         id: '',
