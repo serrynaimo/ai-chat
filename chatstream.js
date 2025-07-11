@@ -271,7 +271,7 @@ const ChatStream = (function() {
                   }
                   this.#_response += delta.content
                   this.#throttleAppendToken(id, delta.content)
-                } else if (!thinking && delta.tool_calls?.length) {
+                } else if (delta.tool_calls?.length) {
                   delta.tool_calls.forEach(tc => {
                     if (this.#toolCalls.length <= tc.index) {
                       this.#toolCalls.push({
