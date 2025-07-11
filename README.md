@@ -11,6 +11,7 @@ Supports a few tool calls:
 6. Generate images
 7. Improve social media posts
 
+Tested it with public APIs of Grok and Claude as well as different models running in LM Studio such as DeepSeek distilled, Gemma and LLama.
 
 
 # Getting started
