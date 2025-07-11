@@ -21,6 +21,7 @@
     <script src="./modes.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.6/marked.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" crossorigin="anonymous"></script>
+    <script defer src="./highlightjs-l4.js" crossorigin="anonymous"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -2079,14 +2080,12 @@
 
             let { id, log } = await updateHistory([prompt], loadedChatId)
 
-            const messages = [...log, prompt]
-
             // let tokenLength = JSON.stringify(initialMessages).length
-            // for (let i = messages.length - 1; i >= 0; i--) {
-            //     tokenLength += JSON.stringify(messages[i]).length + 1
+            // for (let i = log.length - 1; i >= 0; i--) {
+            //     tokenLength += JSON.stringify(log[i]).length + 1
             //     if (tokenLength > CONFIG.MAX_TOKENS) {
             //         while (i >= 0) {
-            //             messages.shift()
+            //             log.shift()
             //             i--
             //         }
             //         continue
@@ -2143,7 +2142,7 @@
             })
 
             await chatStreams[id].stream({
-                messages: [...initialMessages, ...messages],
+                messages: [...initialMessages, ...log],
                 model: selectedModel,
                 tools: TOOLS.filter(t => MODES[mode].tools?.includes(t.function.name))
             })
