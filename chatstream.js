@@ -254,7 +254,6 @@ const ChatStream = (function() {
                 if (!this.#tokenAmount && !this.#startGeneration) {
                   this.#startGeneration = new Date()
                 }
-                this.#tokenAmount++
 
                 if (delta.reasoning_content) {
                   if (!thinking) {
@@ -284,7 +283,7 @@ const ChatStream = (function() {
                         function: { name: '', arguments: '' }
                       })
                     }
-                    const call = this.#toolCalls[tc.index]
+                    const call = this.#toolCalls[tc.index || 0]
                     call.id += tc.id || ''
                     call.function.name += tc.function.name || ''
                     call.function.arguments += tc.function.arguments || ''
@@ -336,6 +335,7 @@ const ChatStream = (function() {
 
       if (!token && !this.#queuedTokens) return
       
+      this.#tokenAmount++
       this.#queuedTokens += token || ''
       const now = Date.now()
       const timeSinceLast = now - this.#lastThrottleTime
