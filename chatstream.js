@@ -276,14 +276,14 @@ const ChatStream = (function() {
                       thinking = false
                       this.#_response += '</think>\n'
                     }
-                    if (this.#toolCalls.length <= tc.index) {
+                    if (tc.index === undefined || this.#toolCalls.length <= tc.index) {
                       this.#toolCalls.push({
-                        id: '',
+                        id: tc.id || '',
                         type: 'function',
                         function: { name: '', arguments: '' }
                       })
                     }
-                    const call = this.#toolCalls[tc.index || 0]
+                    const call = tc.index === undefined ? this.#toolCalls.find(t => t.id === tc.id) : this.#toolCalls[tc.index]
                     call.id += tc.id || ''
                     call.function.name += tc.function.name || ''
                     call.function.arguments += tc.function.arguments || ''
