@@ -578,9 +578,9 @@
             flex: 1;
             width: 100%;
             max-width: 100%;
-            margin: 0 -1em -1em;
+            margin: 0 0 -1em;
             line-height: 1.5em;
-            padding: 0 1em 0 calc(1em + 28px);
+            padding: 0 0 0 28px;
             color: #777;
             position: relative;
             border-radius: 8px;
@@ -599,7 +599,7 @@
         .tool-message > .content:before {
             content: '';
             position: absolute;
-            left: 1em;
+            left: 0;
             top: 1.08em;
             width: 20px;
             height: 20px;
@@ -608,26 +608,20 @@
             background-size: contain;
         }
 
-        .generating .tool-message:last-of-type > .content {
-            background: linear-gradient(to bottom,
-                #1f87cd00 0%,
-                #1f87cd33 50%,
-                #1f87cd00 100%
-            ) 0 0 / 100% 200%;
-            animation: gradientMove 1.5s linear infinite;
+        .generating .tool-message:last-of-type > .content:before {
+            content: '';
+            position: absolute;
+            left: 1px;
+            top: 1.15em;
+            width: 14px;
+            height: 14px;
+            margin: 0 6px 0 0;
+            background-image: none;
+            border: 2px solid #777;
+            border-left-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-
-        @keyframes gradientMove {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 0 -200%;
-            }
-        }
-
-        
-
 
         .tool-message > .content > ol {
             margin: -.5em 0 1em;
@@ -2148,8 +2142,10 @@
                         if (!history[chatIdx].toolArtifacts?.length) {
                             history[chatIdx].toolArtifacts = []
                         }
-                        history[chatIdx].toolArtifacts = history[chatIdx].toolArtifacts.filter(t => !(String(t.id) === String(id) && t.pending))
-                        history[chatIdx].toolArtifacts.push({ func, result, id })
+                        history[chatIdx].toolArtifacts = history[chatIdx].toolArtifacts.filter(t => 
+                            !(String(t.id) === String(id) && t.pending && t.func === func && JSON.stringify(t.args) === JSON.stringify(args))
+                        )
+                        history[chatIdx].toolArtifacts.push({ func, args, result, id })
                         saveToLocalStorage(history)
                     }
                     return result
@@ -2292,7 +2288,7 @@
 
         async function appendMessage({ text, sender, files, status, id = null }) {
             if (loadedChatId !== id) return
-            const message = sender === 'user' && chatMessagesElem.lastElementChild?.classList.contains('user-message') ? chatMessagesElem.lastElementChild : document.createElement(sender === 'tool' ? 'section' : (sender === 'assistant' ? 'article' : 'div'))
+            const message = sender === 'user' && chatMessagesElem.lastElementChild?.classList.contains('user-message') ? chatMessagesElem.lastElementChild : document.createElement(sender === 'tool' ? 'div' : (sender === 'assistant' ? 'article' : 'div'))
             message.className = `message ${sender === 'user' ? 'user-message' : sender === 'assistant' ? 'ai-message' : sender === 'system' ? 'system-message' : 'tool-message'}`
             if (!message.parentElement) {
                 const content = message.firstElementChild || document.createElement('div')
@@ -2781,7 +2777,13 @@
                 }
             }
             if (chat.toolArtifacts?.length) {
-                for (const t of chat.toolArtifacts.toReversed()) {
+                // Filter out pending entries that have a corresponding completed entry
+                const artifacts = chat.toolArtifacts.filter(t => 
+                    !t.pending || !chat.toolArtifacts.some(c => 
+                        !c.pending && c.func === t.func && JSON.stringify(c.args || {}) === JSON.stringify(t.args || {})
+                    )
+                )
+                for (const t of artifacts) {
                     const sid = String(t.id).split('-')[1]
                     if (sid || !toolCalls.length) {
                         window.toolcount = parseInt(sid, 10) + 1
