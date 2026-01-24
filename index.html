@@ -565,6 +565,10 @@
             padding: 0;
         }
 
+        .tool-message:last-of-type {
+            margin-bottom: .6em;
+        }
+
         .tool-message .content {
             position: relative;
             margin: 0;
@@ -2121,14 +2125,32 @@
                 onStart,
                 onEnd,
                 onToolCall: async (func, args, id) => {
+                    const chatId = String(id).split('-')[0]
+                    
+                    // Save trigger before execution so it persists during navigation
+                    const historyBefore = JSON.parse(localStorage.getItem('history')) || []
+                    const chatIdxBefore = historyBefore.findIndex(h => String(h.id) === chatId)
+                    if (chatIdxBefore !== -1) {
+                        if (!historyBefore[chatIdxBefore].toolArtifacts?.length) {
+                            historyBefore[chatIdxBefore].toolArtifacts = []
+                        }
+                        // Add pending tool call
+                        historyBefore[chatIdxBefore].toolArtifacts.push({ func, args, id, pending: true })
+                        saveToLocalStorage(historyBefore)
+                    }
+                    
                     const result = await window.EXECUTE_TOOL[func](args, id)
                     console.log('ToolCall for ' + id + ':', { func, args, result })
+                    
+                    // Update with result after execution
                     const history = JSON.parse(localStorage.getItem('history')) || []
-                    const chatIdx = history.findIndex(h => h.id === id?.split('-')[0])
-                    if (chatIdx) {
+                    const chatIdx = history.findIndex(h => String(h.id) === chatId)
+                    if (chatIdx !== -1) {
                         if (!history[chatIdx].toolArtifacts?.length) {
                             history[chatIdx].toolArtifacts = []
                         }
+                        // Remove pending entry and add completed result
+                        history[chatIdx].toolArtifacts = history[chatIdx].toolArtifacts.filter(t => !(t.id === id && t.pending))
                         history[chatIdx].toolArtifacts.push({ func, result, id })
                         saveToLocalStorage(history)
                     }
@@ -2210,7 +2232,9 @@
                     n.click()
                     e.remove()
                 } else {
-                    loadHistoryLog(chat)
+                    const history = JSON.parse(localStorage.getItem('history')) || []
+                    const latestChat = history.find(h => h.id === chat.id) || chat
+                    loadHistoryLog(latestChat)
                 }
             }
             const alreadyActiveElem = document.querySelector(`#activeChats button[data-id="${chat.id}"]`)
@@ -2713,7 +2737,11 @@
             option.dataset.id = chat.id
             option.dataset.updated = chat.updated || chat.id
             option.className = generating ? 'generating' : ''
-            option.onclick = () => loadHistoryLog(chat)
+            option.onclick = () => {
+                const history = JSON.parse(localStorage.getItem('history')) || []
+                const latestChat = history.find(h => h.id === chat.id) || chat
+                loadHistoryLog(latestChat)
+            }
             const titleElem = document.createElement('span')
             titleElem.textContent = chat.name || chat.log[0].content
             const timeElem = document.createElement('span')
@@ -2756,12 +2784,15 @@
             }
             if (chat.toolArtifacts?.length) {
                 for (const t of chat.toolArtifacts.toReversed()) {
-                    const sid = t.id.split('-')[1]
+                    const sid = String(t.id).split('-')[1]
                     if (sid || !toolCalls.length) {
                         window.toolcount = parseInt(sid, 10) + 1
-                        if (window.RENDER_TOOL[t.func]) {
+                        if (t.pending) {
+                            // Show pending tool call
+                            await appendTool({ html: `<p>Running ${t.func.replace(/_/g, ' ')}...</p>`, id: String(chat.id) + (sid ? '-' + sid : '') })
+                        } else if (window.RENDER_TOOL[t.func]) {
                             try {
-                                await window.RENDER_TOOL[t.func](t.result, chat.id + (sid ? '-' + sid : ''))
+                                await window.RENDER_TOOL[t.func](t.result, String(chat.id) + (sid ? '-' + sid : ''))
                             } catch (e) {
                                 console.error('Failed rendering tool artifact history for ' + chat.id, t.func, t, e)
                             }
