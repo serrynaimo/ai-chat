@@ -133,7 +133,7 @@ EXECUTE_TOOL.evaluate_policy = async ({ inquiry }, id) => {
 
 // RENDER TOOL RESULT IN CHAT MESSAGE STREAM using `appendTool({ html, id })`
 RENDER_TOOL.evaluate_policy = (results, id) => {
-  const parts = id.split('-')
+    const parts = String(id).split('-')
   if (loadedChatId?.toString() === parts[0] && results.functions_used?.length) {
     results.functions_used.forEach(f => window.RENDER_TOOL[f.name] = jl4_render_eval_result)
     appendTool({ html: `<p>Assessing policies ...</p><ol>${results.functions_used.map(t => `<li><strong>Relevant policy: <code class='policy'>${jl4_policy_translate(t.name)}</code></strong><br><div id='${id + '-' + t.i}' class="subcontent"></div></li>`).join('')}</ol>`, id })

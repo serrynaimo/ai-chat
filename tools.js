@@ -420,7 +420,7 @@ EXECUTE_TOOL.generate_image = async ({ prompt }, id) => {
 
 // TOOL RESULT RENDER FUNCTIONS
 RENDER_TOOL.search_web_info = (results, id) => {
-  const parts = id.split('-')
+  const parts = String(id).split('-')
   if (loadedChatId?.toString() === parts[0] && results.id) {
       id = loadedChatId + '-' + (parts[1] || results.id.split('-')[1])
       appendTool({ html: `<p>Web search: ${results.query}</p><ul class="items">${results.results.slice(0, 5).map(r => `<li><img src="${new URL(r.url).origin}/favicon.png" onerror="faviconError(this)" /><a href="${r.url}" rel="noopener nofollow noreferrer" target="_blank" title="${r.title.replace(/"/, '\"')}">${new URL(r.url).hostname.replace('www.','')}</a></li>`).join('')}${results.results.length > 5 ? `<li><span>... ${results.results.length - 5} more</span></li>` : ''}</ul>`, id })
@@ -428,21 +428,21 @@ RENDER_TOOL.search_web_info = (results, id) => {
 }
 
 RENDER_TOOL.solve_math = (results, id) => {
-    const parts = id.split('-')
+    const parts = String(id).split('-')
     if (loadedChatId?.toString() === parts[0] && results.id) {
         appendTool({ html: `<p>Doing math: <code class='code language-javascript'>${results.code.replace(';', '')} = ${results.result}</code></p>\n`, id })
     }
 }
 
 RENDER_TOOL.solve_complex_math = (results, id) => {
-    const parts = id.split('-')
+    const parts = String(id).split('-')
     if (loadedChatId?.toString() === parts[0] && results.id) {
         appendTool({ html: `<p>Solving complex math for data:\n\n\`\`\`json\n${results.data}\n\`\`\`\n\nUsing algorithm:\n\n\`\`\`javascript\n${results.algorithm}\n\`\`\`\n\nResult:\n\n\`\`\`json\n${JSON.stringify(results.result)}\n\`\`\`\n</p>\n`, id })
     }
 }
 
 RENDER_TOOL.render_chart = async (results, id) => {
-    const parts = id.split('-')
+    const parts = String(id).split('-')
     if (loadedChatId?.toString() === parts[0] && results.chartcode) {
         const tid = id + '-' + window.toolcount++
         await appendTool({ html: `<p>Visualising information:</p><div class='chart' id='chart-${tid}'><i style='text-align: center; display: block; padding: 2em;'>Model did not render this chart successfully</i></div>`, id })
@@ -465,7 +465,7 @@ RENDER_TOOL.render_chart = async (results, id) => {
 }
 
 RENDER_TOOL.get_weather = (results, id) => {
-  const parts = id.split('-')
+  const parts = String(id).split('-')
   if (loadedChatId?.toString() === parts[0] && results.id) {
       id = loadedChatId + '-' + (parts[1] || results.id.split('-')[1])
       appendTool({ html: '<p>' + (results.forecast ? 'Checking the 7-day weather forecast ...' : 'Checking today\'s weather ...') + '</p>', id })
@@ -473,7 +473,7 @@ RENDER_TOOL.get_weather = (results, id) => {
 }
 
 RENDER_TOOL.stock_quotes = (results, id) => {
-    const parts = id.split('-')
+    const parts = String(id).split('-')
     if (loadedChatId?.toString() === parts[0] && results.id) {
         id = loadedChatId + '-' + (parts[1] || results.id.split('-')[1])
         appendTool({ html: `<p>Retrieving ${results.info || 'financial market information'} ${results.symbol ? `for <code>${results.symbol}</code>` : ''}...</p>`, id })
@@ -481,7 +481,7 @@ RENDER_TOOL.stock_quotes = (results, id) => {
   }
 
 RENDER_TOOL.search_user_history = (results, id) => {
-  const parts = id.split('-')
+  const parts = String(id).split('-')
   if (loadedChatId?.toString() === parts[0] && results.id) {
       const content = results.results?.map(r => {
           return r.log?.length ? `<li><span>"${r.name}"</span></li>` : ''
@@ -492,14 +492,14 @@ RENDER_TOOL.search_user_history = (results, id) => {
 }
 
 RENDER_TOOL.spawn_research_agents = (results, id) => {
-  const parts = id.split('-')
+  const parts = String(id).split('-')
   if (loadedChatId?.toString() === parts[0]) {
     appendTool({ html: `<p>Researching ...</p><ol>${results.topics.map(t => `<li><strong>${t.topic}</strong><br><div id='${id + '-' + t.i}' class="subcontent"></div></li>`).join('')}</ol>`, id })
   }
 }
 
 RENDER_TOOL.generate_image = (results, id) => {
-    const parts = id.split('-')
+    const parts = String(id).split('-')
     if (loadedChatId?.toString() === parts[0]) {
       appendTool({ html: `<p>Generating images ...</p><div class='images'>${results.images.map(i => `<div class='image' id='${id + '-' + i.i}'>${i.url ? `<div class='content'><a href='${i.url}' target='_blank'><img src='${i.url}' onerror='this.parentNode.parentNode.remove()' /></a></div>` : ''}</div>`).join('')}</div>`, id })
     }

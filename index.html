@@ -2134,7 +2134,6 @@
                         if (!historyBefore[chatIdxBefore].toolArtifacts?.length) {
                             historyBefore[chatIdxBefore].toolArtifacts = []
                         }
-                        // Add pending tool call
                         historyBefore[chatIdxBefore].toolArtifacts.push({ func, args, id, pending: true })
                         saveToLocalStorage(historyBefore)
                     }
@@ -2149,8 +2148,7 @@
                         if (!history[chatIdx].toolArtifacts?.length) {
                             history[chatIdx].toolArtifacts = []
                         }
-                        // Remove pending entry and add completed result
-                        history[chatIdx].toolArtifacts = history[chatIdx].toolArtifacts.filter(t => !(t.id === id && t.pending))
+                        history[chatIdx].toolArtifacts = history[chatIdx].toolArtifacts.filter(t => !(String(t.id) === String(id) && t.pending))
                         history[chatIdx].toolArtifacts.push({ func, result, id })
                         saveToLocalStorage(history)
                     }
@@ -2787,12 +2785,11 @@
                     const sid = String(t.id).split('-')[1]
                     if (sid || !toolCalls.length) {
                         window.toolcount = parseInt(sid, 10) + 1
-                        if (t.pending) {
-                            // Show pending tool call
-                            await appendTool({ html: `<p>Running ${t.func.replace(/_/g, ' ')}...</p>`, id: String(chat.id) + (sid ? '-' + sid : '') })
-                        } else if (window.RENDER_TOOL[t.func]) {
+                        if (window.RENDER_TOOL[t.func]) {
                             try {
-                                await window.RENDER_TOOL[t.func](t.result, String(chat.id) + (sid ? '-' + sid : ''))
+                                // For pending tools, construct initial result from args; for completed, use result
+                                const renderData = t.pending ? { id: t.id, ...t.args } : t.result
+                                await window.RENDER_TOOL[t.func](renderData, String(chat.id) + (sid ? '-' + sid : ''))
                             } catch (e) {
                                 console.error('Failed rendering tool artifact history for ' + chat.id, t.func, t, e)
                             }
