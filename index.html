@@ -1663,13 +1663,13 @@
     <script>
         // Globals. Don't touch.
         window.toolcount = 0
-        let isAvailable = null,
-         loadedChatId = null,
-         selectedModel = null,
-         loadedModels = [],
-         attachedFiles = [],
-         blockAutoScrolling = false,
-         chatStreams = {}
+        isAvailable = null,
+        loadedChatId = null,
+        selectedModel = null,
+        loadedModels = [],
+        attachedFiles = [],
+        blockAutoScrolling = false,
+        chatStreams = {}
         
         function adjustOffset(value) {
             if (!value) {
@@ -2187,17 +2187,17 @@
 
         function saveToLocalStorage(history) {
             history.sort((a, b) => (a.updated || a.id) - (b.updated || b.id))
-            const toStore = JSON.stringify(history)
             while (history.length > 0) {
                 try {
+                    const toStore = JSON.stringify(history)
                     localStorage.setItem('history', toStore)
+                    console.log(`Saved ${history.length} chat logs with ${toStore.length} characters to history.`)
                     break
                 } catch (e) {
                     console.log(e)
-                    history.pop()
+                    history.shift() // Remove oldest (first item after ascending sort)
                 }
             }
-            console.log(`Saved ${history.length} chat logs with ${toStore.length} characters to history.`)
             loadedChat = null
         }
 
@@ -2574,6 +2574,7 @@
             if (chatStreams[null]) {
                 const history = JSON.parse(localStorage.getItem('history')) || []
                 chatStreams[null].stream({
+                    id: null,
                     messages: MODES.sayHello.initialMessages(history)
                 })
             } else {
